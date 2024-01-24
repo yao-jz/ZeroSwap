@@ -49,20 +49,22 @@ It should get all the data maintained by the smart contract.
 5. Imbalance
 6. Mid Price
 7. Price Delta
-8. Hyper Parameters
+8. Ask Price
+9. Bid Price
+10. Hyper Parameters
 
 ### Input of the Swap Function
 
 1. updated Q table
-    1. index n
-    2. index a
-    3. value
-2. new swap value
-3. updated mid price
-4. updated price delta
-5. updated ask price
-6. updated bid price
-7. updated imbalance
+    1. index n (uint32)
+    2. index a (uint32)
+    3. value (int256)
+2. new swap value (int256)
+3. updated mid price (int256)
+4. updated price delta (int256)
+5. updated ask price (int256)
+6. updated bid price (int256)
+7. updated imbalance (int256)
 
 ### Computation inside the Swap Function
 
@@ -70,3 +72,12 @@ It should get all the data maintained by the smart contract.
 2. replace the pointer's value with the new swap value
 3. update the mid price, price delta, ask price, bid price, and the imbalance
 4. perform the swap
+
+
+## Roadmap
+
+1. Implement the core algorithm of Q-learning
+    1. smart contract (finished)
+    2. client circuit 
+2. Implement the swap logic
+3. Implement the frontend
