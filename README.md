@@ -1,6 +1,8 @@
 # ZeroSwap Implementation with Axiom framework
 
-This is built based on the repository https://github.com/axiom-crypto/autonomous-airdrop-example
+In this repository, we implement the Q-learning algorithm in the ZeroSwap using the Axiom and Solidity. 
+
+This is built based on the repository https://github.com/axiom-crypto/autonomous-airdrop-example, and the paper https://arxiv.org/pdf/2310.09413.pdf
 
 There are three components: frontend, zk circuit, and the contract
 

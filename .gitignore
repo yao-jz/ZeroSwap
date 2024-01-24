@@ -45,3 +45,6 @@ docs/
 # Misc
 .DS_Store
 .axiom
+
+# backup files
+backup/
