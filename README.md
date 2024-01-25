@@ -109,3 +109,7 @@ It should get all the data maintained by the smart contract.
 
 1. How to index multi-dimensional arrays in the client circuit?
 2. Can we get the reference of elements in the array and change them?
+
+## Error Message
+
+1. The client circuit must have a addToCallback function, otherwise it will have an error message throw new Error("Could not find import name");

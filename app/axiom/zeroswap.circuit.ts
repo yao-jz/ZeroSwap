@@ -1,21 +1,18 @@
 import {
     addToCallback,
     CircuitValue,
-    CircuitValue256,
     constant,
     poseidon,
-    witness,
     pow,
     sub,
     add,
-    getReceipt,
-    getTx,
     mul,
     div,
     getStorage,
     sum,
     mod,
     getHeader,
+    isEqual,
 } from "@axiom-crypto/client";
 
 /// For type safety, define the input types to your circuit here.
@@ -34,10 +31,9 @@ export interface CircuitInputs {
 // `-f <circuitFunctionName>` for it to work
 export const circuit = async (inputs: CircuitInputs) => {
     // initialize a map, from 0, 1, 2 to -1, 0, 1, respectively
-    let map: Map<CircuitValue, CircuitValue> = new Map();
-    map.set(constant(0), constant(-1));
-    map.set(constant(1), constant(0));
-    map.set(constant(2), constant(1));
+    const zero = constant(0);
+    const one = constant(1);
+    const two = constant(2);
     // Read data from the contract's slot
     const storage: Storage = getStorage(inputs.blockNumber, inputs.contractAddress);
     const scalingFactor: CircuitValue = await storage.slot(0);
@@ -132,12 +128,26 @@ export const circuit = async (inputs: CircuitInputs) => {
         const transactionsRoot = await header.transactionsRoot();
         const receiptsRoot = await header.receiptsRoot();
         // get map value
-        action1 = map.get(mod(poseidon(transactionsRoot.toCircuitValue()), 3)) as CircuitValue;
-        action2 = map.get(mod(poseidon(receiptsRoot.toCircuitValue()), 3)) as CircuitValue;
+        action1 = mod(poseidon(transactionsRoot.toCircuitValue()), 3)
+        action2 = mod(poseidon(receiptsRoot.toCircuitValue()), 3)
     } else { // greedy action
         // maxIndex
-        action1 = map.get(div(maxIndex, 3)) as CircuitValue;
-        action2 = map.get(mod(maxIndex, 3)) as CircuitValue;
+        action1 = div(maxIndex, 3);
+        action2 = mod(maxIndex, 3);
+    }
+    if (isEqual(action1, zero)) {
+        action1 = constant(-1);
+    } else if (isEqual(action1, one)) {
+        action1 = constant(0);
+    } else if (isEqual(action1, two)) {
+        action1 = constant(1);
+    }
+    if (isEqual(action2, zero)) {
+        action2 = constant(-1);
+    } else if (isEqual(action2, one)) {
+        action2 = constant(0);
+    } else if (isEqual(action2, two)) {
+        action2 = constant(1);
     }
     const newMidPrice = add( // 1x scaling factor
         midPrice,
