@@ -53,6 +53,30 @@ It should get all the data maintained by the smart contract.
 9. Bid Price
 10. Hyper Parameters
 
+### Contract slot
+
+| Name          | Type          | Slot | Offset | Bytes | Contract                  |
+|---------------|---------------|------|--------|-------|---------------------------|
+| scalingFactor | int256        | 0    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| windowSize    | uint256       | 1    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| alpha         | int256        | 2    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| gamma         | int256        | 3    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| epsilon       | int256        | 4    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| sigma         | int256        | 5    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| mu            | int256        | 6    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| QTable        | int256[9][21] | 7    | 0      | 6048  | src/ZeroSwap.sol:ZeroSwap |
+| action1       | int256[3]     | 196  | 0      | 96    | src/ZeroSwap.sol:ZeroSwap |
+| action2       | int256[3]     | 199  | 0      | 96    | src/ZeroSwap.sol:ZeroSwap |
+| stateHistory  | int256[20]    | 202  | 0      | 640   | src/ZeroSwap.sol:ZeroSwap |
+| pointer       | uint256       | 222  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| imbalance     | int256        | 223  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| midPrice      | int256        | 224  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| priceDelta    | int256        | 225  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| askPrice      | int256        | 226  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| bidPrice      | int256        | 227  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| lastAction1   | int256        | 228  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| lastAction2   | int256        | 229  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+
 ### Input of the Swap Function
 
 1. updated Q table
@@ -73,11 +97,15 @@ It should get all the data maintained by the smart contract.
 3. update the mid price, price delta, ask price, bid price, and the imbalance
 4. perform the swap
 
-
 ## Roadmap
 
 1. Implement the core algorithm of Q-learning
     1. smart contract (finished)
-    2. client circuit 
+    2. client circuit (finished)
 2. Implement the swap logic
 3. Implement the frontend
+
+## Existing Problems
+
+1. How to index multi-dimensional arrays in the client circuit?
+2. Can we get the reference of elements in the array and change them?

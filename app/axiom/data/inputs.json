@@ -1,5 +1,8 @@
 {
-    "blockNumber": 5130226,
-    "txIdx": 40,
-    "logIdx": 2
+    "value": 1,
+    "address": "0x3DAD7c5704A6eA567A0549ee711768C0A405D06C",
+    "direction": 0,
+    "blockNumber": 0,
+    "contractAddress": "0x3DAD7c5704A6eA567A0549ee711768C0A405D06C",
+    "latestBlockNumber": 0
 }
