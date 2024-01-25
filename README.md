@@ -11,10 +11,15 @@ Consider the simple implementation first, the swapping logic should refer to the
 ## Algorithm Hyper Parameter Setting
 
 windowSize = 10
+
 alpha = 0.3 learning rate
+
 sigma = 1 price jump
+
 epsilon = 0.99 probability of exploration vs exploitation - decays over time, this is only the starting epsilon
+
 mu = 18
+
 gamma = 0.99 discount rate of future rewards
 
 ## Frontend
@@ -99,16 +104,18 @@ It should get all the data maintained by the smart contract.
 
 ## Roadmap
 
-1. Implement the core algorithm of Q-learning
+1. Implement the core algorithm of Q-learning (finished)
     1. smart contract (finished)
     2. client circuit (finished)
-2. Implement the swap logic
-3. Implement the frontend
+2. Test with Foundry
+3. Implement the swap logic
+4. Implement the frontend
 
 ## Existing Problems
 
 1. How to index multi-dimensional arrays in the client circuit?
 2. Can we get the reference of elements in the array and change them?
+3. By now, some array operations in the client circuit are not using the Axiom datatype/primitives.  
 
 ## Error Message
 
