@@ -1,8 +1,8 @@
-# ZeroSwap Implementation with Axiom framework
+# ZeroSwap Implementation with Axiom
 
-In this repository, we implement the Q-learning algorithm in the ZeroSwap using the Axiom and Solidity. 
+In this repository, we implement the Q-learning algorithm in the [ZeroSwap paper](https://arxiv.org/pdf/2310.09413.pdf) using the [Axiom](https://www.axiom.xyz/). 
 
-This is built based on the repository https://github.com/axiom-crypto/autonomous-airdrop-example, and the paper https://arxiv.org/pdf/2310.09413.pdf
+This is built based on the repository [autonomous-airdrop-example](https://github.com/axiom-crypto/autonomous-airdrop-example)
 
 ## Contracts on Sepolia
 
@@ -18,21 +18,14 @@ NOTICE: use the [unit converter](https://sepolia.etherscan.io/unitconverter) to 
 
 ## Algorithm Hyper Parameter Setting
 
-windowSize = 10
-
-alpha = 0.3 learning rate
-
-sigma = 1 price jump
-
-epsilon = 0.99 probability of exploration vs exploitation - decays over time, this is only the starting epsilon
-
-mu = 18
-
-gamma = 0.99 discount rate of future rewards
-
-## Frontend
-
-Users make requests to swap some tokens. The input from the frontend is the same as the uniswap. And there is also a random number, and two random actions. We use the hash of the latest block to generate the random numbers. 
+```js
+windowSize = 10 // history transaction window size
+alpha = 0.3 // learning rate
+sigma = 1 // price jump
+epsilon = 0.99 // probability of exploration vs exploitation - decays over time, this is only the starting epsilon
+mu = 18 // for computing rewards
+gamma = 0.99 // discount rate of future rewards
+```
 
 ## ZK Circuit
 
@@ -127,17 +120,30 @@ It should get all the data maintained by the smart contract.
 
 ## Existing Problems
 
-1. How to index multi-dimensional arrays in the client circuit? (solved)
+1. How to index multi-dimensional arrays in the client circuit? (No need to solve by now)
 2. Can we get the reference of elements in the array and change them? (solved, just copy)
-3. By now, some array operations in the client circuit are not using the Axiom datatype/primitives. (use the .number() to index and use it as the boolean value) (solved)
-4. How to test the convergence without spending lots of testETH? How to skip the Axiom verifier and prover and just to verify my codes?
+3. By now, some array operations in the client circuit are not using the Axiom datatype/priitives. (use the .number() to index and use it as the boolean value) (solved)
+4. The **reward** and the updated **Q value** in the Q table can be negative. How to deal with the negative numbers in the algorithm?
+    For example,
+    ```js
+    const a: CircuitValue = sub(constant(0), constant(1));
+    const b: CircuitValue = div(a, constant(1));
+    ```
+5. Why does this statement generate error message "SNARK proof failed to verify"?
+    ```js
+    const header = getHeader(blockNumber);
+    const receiptsRoot: CircuitValue256 = await header.receiptsRoot();
+    const randomNumber = mod(poseidon(receiptsRoot.lo()), constant(3));
+    ```
+6. How to test the algorithm's convergence without spending lots of test ETH? How to skip the Axiom verifier and prover and just to verify my codes?
 
 ## Error Message
 
 1. The client circuit must have a addToCallback function, otherwise it will have an error message throw new Error("Could not find import name");
 2. The output of the storage.slot is CircuitValue256, we should convert it if we want to use CircuitValue.
 
-## Circuit
+## Compile and Prove the Circuit
 
 npx axiom circuit compile app/axiom/zeroswap.circuit.ts --inputs app/axiom/data/inputs.json --provider $PROVIDER_URI_SEPOLIA
+
 npx axiom circuit prove app/axiom/zeroswap.circuit.ts --inputs app/axiom/data/inputs.json --provider $PROVIDER_URI_SEPOLIA

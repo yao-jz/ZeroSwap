@@ -190,16 +190,16 @@ export const circuit = async (inputs: CircuitInputs) => {
     // Get a random number
     const header = getHeader(inputs.latestBlockNumber);
     const stateRoot: CircuitValue256 = await header.stateRoot();
-    // const randomNumber: CircuitValue = mod(poseidon(stateRoot.lo()), scalingFactor);
-    const randomNumber: CircuitValue = constant(0);
+    const randomNumber: CircuitValue = mod(poseidon(stateRoot.lo()), scalingFactor);
+    // const randomNumber: CircuitValue = constant(0);
     const transactionsRoot: CircuitValue256 = await header.transactionsRoot();
     const receiptsRoot: CircuitValue256 = await header.receiptsRoot();
-    // const action1 = select(mod(poseidon(transactionsRoot.lo()), constant(3)), div(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
-    // const action2 = select(mod(poseidon(receiptsRoot.lo()), constant(3)), mod(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
+    const action1 = select(mod(poseidon(transactionsRoot.lo()), constant(3)), div(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
+    const action2 = select(mod(poseidon(receiptsRoot.lo()), constant(3)), mod(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
     // const temp1: CircuitValue = poseidon(receiptsRoot.lo());
     // const temp = mod(temp1, constant(3));
-    const action1 = select(constant(1), div(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
-    const action2 = select(constant(1), mod(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
+    // const action1 = select(constant(1), div(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
+    // const action2 = select(constant(1), mod(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
     addToCallback(action1);
     addToCallback(action2);
     const newMidPrice = add( // 1x scaling factor
