@@ -6,15 +6,18 @@ pragma solidity ^0.8.19;
 // import "./interfaces/IUniswapFactory.sol";
 // import "./interfaces/IUniswapExchange.sol";
 import {AxiomV2Client} from "@axiom-crypto/v2-periphery/client/AxiomV2Client.sol";
+import { Ownable } from "@openzeppelin-contracts/access/Ownable.sol";
+import { IERC20 } from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
+// import { ERC20 } from "@openzeppelin-contracts/token/ERC20/ERC20.sol";
 
-contract ZeroSwap is AxiomV2Client {
+contract ZeroSwap is AxiomV2Client, Ownable {
     /// @dev The unique identifier of the circuit accepted by this contract.
-    bytes32 immutable QUERY_SCHEMA;
+    bytes32 public QUERY_SCHEMA;
 
     /// @dev The chain ID of the chain whose data the callback is expected to be called from.
-    uint64 immutable SOURCE_CHAIN_ID;
+    uint64 public SOURCE_CHAIN_ID;
 
-    // Hyper Parameters
+    // Hyper Parameters for Q Learning
     int256 public scalingFactor = 1000000; // 1x scaling factor
     uint256 public windowSize = 10;
     int256 public alpha = 600000; // Learning rate 1x scaling factor
@@ -31,29 +34,25 @@ contract ZeroSwap is AxiomV2Client {
     int256 public imbalance;
     int256 public midPrice; // 1x scaling factor
     int256 public priceDelta; // 1x scaling factor
+    // when buying 1 token1, how many token2 should we pay
     int256 public askPrice; // 1x scaling factor
+    // when selling 1 token1, how many token2 should we receive
     int256 public bidPrice; // 1x scaling factor
     int256 public lastAction1; // 0, 1, 2
     int256 public lastAction2; // 0, 1, 2
 
-    // address public owner;
-    // uint256 public totalSupply;
-    // string public name;
-    // string public symbol;
-    // uint8 public decimals;
-    // mapping(address => uint256) public balanceOf;
-    // mapping(address => mapping(address => uint256)) public allowance;
-
+    // Swap Logic
+    IERC20 token1;
+    IERC20 token2;
+    
     // Events
-    // event Transfer(address indexed from, address indexed to, uint256 value);
-
-    // event Approval(
-    //     address indexed owner,
-    //     address indexed spender,
-    //     uint256 value
-    // );
-
-    event Swap();
+    event Token1AddressUpdated(_token);
+    event Token2AddressUpdated(_token);
+    event AxiomCallbackQuerySchemaUpdated(bytes32 axiomCallbackQuerySchema);
+    event Token1Purchase(address indexed buyer, uint256 indexed token2Sold, uint256 indexed token1Bought);
+    event Token2Purchase(address indexed buyer, uint256 indexed token1Sold, uint256 indexed token2Bought);
+    event AddLiquidity(address indexed provider, uint256 indexed token1Amount, uint256 indexed token2Amount);
+    event RemoveLiquidity(address indexed provider, uint256 indexed token1Amount, uint256 indexed token2Amount);
 
     constructor(
         address _axiomV2QueryAddress,
@@ -96,9 +95,9 @@ contract ZeroSwap is AxiomV2Client {
 
     function _axiomV2Callback(
         uint64, /* sourceChainId */
-        address callerAddr,
+        address, /* callerAddr */
         bytes32, /* querySchema */
-        uint256 queryId,
+        uint256, /* queryId */
         bytes32[] calldata axiomResults,
         bytes calldata /* extraData */
     ) internal virtual override {
@@ -161,40 +160,114 @@ contract ZeroSwap is AxiomV2Client {
         require(querySchema == QUERY_SCHEMA, "Invalid query schema");
     }
 
-    // function transfer(
-    //     address _to,
-    //     uint256 _value
-    // ) external returns (bool success) {
-    //     require(balanceOf[msg.sender] >= _value, "Insufficient balance");
-    //     balanceOf[msg.sender] -= _value;
-    //     balanceOf[_to] += _value;
-    //     emit Transfer(msg.sender, _to, _value);
-    //     success = true;
-    // }
+    function updateToken1(address _token) public onlyOwner {
+        token1 = IERC20(_token);
+        emit Token1AddressUpdated(_token);
+    }
 
-    // function approve(
-    //     address _spender,
-    //     uint256 _value
-    // ) external returns (bool success) {
-    //     allowance[msg.sender][_spender] = _value;
-    //     emit Approval(msg.sender, _spender, _value);
-    //     success = true;
-    // }
+    function updateToken2(address _token) public onlyOwner {
+        token2 = IERC20(_token);
+        emit Token2AddressUpdated(_token);
+    }
 
-    // function transferFrom(
-    //     address _from,
-    //     address _to,
-    //     uint256 _value
-    // ) external returns (bool success) {
-    //     require(balanceOf[_from] >= _value, "Insufficient balance");
-    //     require(
-    //         allowance[_from][msg.sender] >= _value,
-    //         "Insufficient allowance"
-    //     );
-    //     balanceOf[_from] -= _value;
-    //     balanceOf[_to] += _value;
-    //     allowance[_from][msg.sender] -= _value;
-    //     emit Transfer(_from, _to, _value);
-    //     success = true;
-    // }
+    function updateCallbackQuerySchema(bytes32 _axiomCallbackQuerySchema) public onlyOwner {
+        QUERY_SCHEMA = _axiomCallbackQuerySchema;
+        emit AxiomCallbackQuerySchemaUpdated(_axiomCallbackQuerySchema);
+    }
+
+    function token1Address() public view returns (address) {
+        return address(token1);
+    }
+    function token2Address() public view returns (address) {
+        return address(token2);
+    }
+
+    function getPointer() public view returns (uint256) {
+        return pointer;
+    }
+
+    function getImbalance() public view returns (int256) {
+        return imbalance;
+    }
+
+    function getMidPrice() public view returns (int256) {
+        return midPrice;
+    }
+
+    function getPriceDelta() public view returns (int256) {
+        return priceDelta;
+    }
+
+    function setMidPrice(int256 _midPrice) public onlyOwner {
+        midPrice = _midPrice;
+    }
+
+    function setPriceDelta(int256 _priceDelta) public onlyOwner {
+        priceDelta = _priceDelta;
+    }
+
+    function getAskPrice() public view returns (int256) {
+        return askPrice;
+    }
+
+    function getBidPrice() public view returns (int256) {
+        return bidPrice;
+    }
+
+    function getLastAction1() public view returns (int256) {
+        return lastAction1;
+    }
+
+    function getLastAction2() public view returns (int256) {
+        return lastAction2;
+    }
+
+    function getQTable() public view returns (int256[9][21] memory) {
+        return QTable;
+    }
+
+    function getStateHistory() public view returns (int256[20] memory) {
+        return stateHistory;
+    }
+
+    function getQTableValue(uint256 _indexN, uint256 _indexA) public view returns (int256) {
+        return QTable[_indexN][_indexA];
+    }
+
+    function getStateHistoryValue(uint256 _index) public view returns (int256) {
+        return stateHistory[_index];
+    }
+
+    function addLiquidity(uint256 _token1Amount, uint256 _token2Amount) public onlyOwner {
+        require(_token1Amount > 0, "Token1 amount must be greater than 0");
+        require(_token2Amount > 0, "Token2 amount must be greater than 0");
+        token1.transferFrom(msg.sender, address(this), _token1Amount);
+        token2.transferFrom(msg.sender, address(this), _token2Amount);
+        emit AddLiquidity(msg.sender, _token1Amount, _token2Amount);
+    }
+
+    function removeLiquidity(uint256 _token1Amount, uint256 _token2Amount) public onlyOwner {
+        require(_token1Amount > 0, "Token1 amount must be greater than 0");
+        require(_token2Amount > 0, "Token2 amount must be greater than 0");
+        token1.transfer(msg.sender, _token1Amount);
+        token2.transfer(msg.sender, _token2Amount);
+        emit RemoveLiquidity(msg.sender, _token1Amount, _token2Amount);
+    }
+
+    function swapToken1ForToken2(uint256 _token1Amount) public {
+        require(_token1Amount > 0, "Token1 amount must be greater than 0");
+        token1.transferFrom(msg.sender, address(this), _token1Amount);
+        uint256 _token2Amount = uint256(_token1Amount * bidPrice / scalingFactor);
+        token2.transfer(msg.sender, uint256(_token2Amount));
+        emit Token2Purchase(msg.sender, _token1Amount, _token2Amount);
+    }
+
+    function swapToken2ForToken1(uint256 _token2Amount) public {
+        require(_token2Amount > 0, "Token2 amount must be greater than 0");
+        token2.transferFrom(msg.sender, address(this), _token2Amount);
+        uint256 _token1Amount = uint256(_token2Amount * scalingFactor / askPrice);
+        token1.transfer(msg.sender, uint256(_token1Amount));
+        emit Token1Purchase(msg.sender, _token2Amount, _token1Amount);
+    }
+
 }

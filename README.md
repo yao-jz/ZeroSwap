@@ -107,15 +107,16 @@ It should get all the data maintained by the smart contract.
 1. Implement the core algorithm of Q-learning (finished)
     1. smart contract (finished)
     2. client circuit (finished)
-2. Test with Foundry
-3. Implement the swap logic
-4. Implement the frontend
+2. Test with Foundry (finished)
+3. Implement the swap logic 
+4. Implement the frontend 
 
 ## Existing Problems
 
 1. How to index multi-dimensional arrays in the client circuit?
 2. Can we get the reference of elements in the array and change them?
 3. By now, some array operations in the client circuit are not using the Axiom datatype/primitives.  
+4. How to test the convergence without spending lots of testETH? How to skip the Axiom verifier and prover and just to verify my codes?
 
 ## Error Message
 
