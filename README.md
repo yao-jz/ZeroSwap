@@ -60,27 +60,31 @@ It should get all the data maintained by the smart contract.
 
 ### Contract slot
 
-| Name          | Type          | Slot | Offset | Bytes | Contract                  |
-|---------------|---------------|------|--------|-------|---------------------------|
-| scalingFactor | int256        | 0    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| windowSize    | uint256       | 1    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| alpha         | int256        | 2    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| gamma         | int256        | 3    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| epsilon       | int256        | 4    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| sigma         | int256        | 5    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| mu            | int256        | 6    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| QTable        | int256[9][21] | 7    | 0      | 6048  | src/ZeroSwap.sol:ZeroSwap |
-| action1       | int256[3]     | 196  | 0      | 96    | src/ZeroSwap.sol:ZeroSwap |
-| action2       | int256[3]     | 199  | 0      | 96    | src/ZeroSwap.sol:ZeroSwap |
-| stateHistory  | int256[20]    | 202  | 0      | 640   | src/ZeroSwap.sol:ZeroSwap |
-| pointer       | uint256       | 222  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| imbalance     | int256        | 223  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| midPrice      | int256        | 224  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| priceDelta    | int256        | 225  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| askPrice      | int256        | 226  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| bidPrice      | int256        | 227  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| lastAction1   | int256        | 228  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
-| lastAction2   | int256        | 229  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| Name            | Type            | Slot | Offset | Bytes | Contract                  |
+|-----------------|-----------------|------|--------|-------|---------------------------|
+| _owner          | address         | 0    | 0      | 20    | src/ZeroSwap.sol:ZeroSwap |
+| QUERY_SCHEMA    | bytes32         | 1    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| SOURCE_CHAIN_ID | uint64          | 2    | 0      | 8     | src/ZeroSwap.sol:ZeroSwap |
+| scalingFactor   | uint256         | 3    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| windowSize      | uint256         | 4    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| alpha           | int256          | 5    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| gamma           | int256          | 6    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| epsilon         | int256          | 7    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| mu              | int256          | 8    | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| QTable          | int256[9][21]   | 9    | 0      | 6048  | src/ZeroSwap.sol:ZeroSwap |
+| action1         | int256[3]       | 198  | 0      | 96    | src/ZeroSwap.sol:ZeroSwap |
+| action2         | int256[3]       | 201  | 0      | 96    | src/ZeroSwap.sol:ZeroSwap |
+| stateHistory    | int256[20]      | 204  | 0      | 640   | src/ZeroSwap.sol:ZeroSwap |
+| pointer         | uint256         | 224  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| imbalance       | int256          | 225  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| midPrice        | int256          | 226  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| priceDelta      | int256          | 227  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| askPrice        | uint256         | 228  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| bidPrice        | uint256         | 229  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| lastAction1     | int256          | 230  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| lastAction2     | int256          | 231  | 0      | 32    | src/ZeroSwap.sol:ZeroSwap |
+| token1          | contract IERC20 | 232  | 0      | 20    | src/ZeroSwap.sol:ZeroSwap |
+| token2          | contract IERC20 | 233  | 0      | 20    | src/ZeroSwap.sol:ZeroSwap |
 
 ### Input of the Swap Function
 
@@ -108,8 +112,8 @@ It should get all the data maintained by the smart contract.
     1. smart contract (finished)
     2. client circuit (finished)
 2. Test with Foundry (finished)
-3. Implement the swap logic 
-4. Implement the frontend 
+3. Implement the swap logic (finished)
+4. Implement the frontend (pending)
 
 ## Existing Problems
 

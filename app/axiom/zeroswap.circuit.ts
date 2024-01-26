@@ -21,7 +21,6 @@ export interface CircuitInputs {
     value: CircuitValue;
     address: CircuitValue;
     direction: CircuitValue;
-    blockNumber: CircuitValue;
     contractAddress: CircuitValue;
     latestBlockNumber: CircuitValue;
 }
@@ -35,35 +34,35 @@ export const circuit = async (inputs: CircuitInputs) => {
     const one = constant(1);
     const two = constant(2);
     // Read data from the contract's slot
-    const storage: Storage = getStorage(inputs.blockNumber, inputs.contractAddress);
-    const scalingFactor: CircuitValue = await storage.slot(0);
-    const windowSize: CircuitValue = await storage.slot(1);
-    const alpha: CircuitValue = await storage.slot(2);
-    const gamma: CircuitValue = await storage.slot(3);
-    const epsilon: CircuitValue = await storage.slot(4);
-    const mu: CircuitValue = await storage.slot(6);
+    const storage: Storage = getStorage(inputs.latestBlockNumber, inputs.contractAddress);
+    const scalingFactor: CircuitValue = await storage.slot(3);
+    const windowSize: CircuitValue = await storage.slot(4);
+    const alpha: CircuitValue = await storage.slot(5);
+    const gamma: CircuitValue = await storage.slot(6);
+    const epsilon: CircuitValue = await storage.slot(7);
+    const mu: CircuitValue = await storage.slot(8);
     let QTable: Array<Array<CircuitValue>> = [];
     for (let i = 0; i < 21; i++) {
         QTable.push([]);
     }
     for (let i = 0; i < 21; i++) {
         for (let j = 0; j < 9; j++) {
-            QTable[i].push(await storage.slot(7 + i * 9 + j));
+            QTable[i].push(await storage.slot(9 + i * 9 + j));
         }
     }
     let stateHistory: Array<CircuitValue> = [];
     for (let i = 0; i < 20; i++) {
-        stateHistory.push(await storage.slot(202 + i));
+        stateHistory.push(await storage.slot(204 + i));
     }
-    let pointer: number = await storage.slot(222);
+    let pointer: number = await storage.slot(224);
 
-    const imbalance: number = await storage.slot(223);
-    const midPrice: CircuitValue = await storage.slot(224);
-    const priceDelta: CircuitValue = await storage.slot(225);
-    const askPrice: CircuitValue = await storage.slot(226);
-    const bidPrice: CircuitValue = await storage.slot(227);
-    const lastAction1: number = await storage.slot(228);
-    const lastAction2: number = await storage.slot(229);
+    const imbalance: number = await storage.slot(225);
+    const midPrice: CircuitValue = await storage.slot(226);
+    const priceDelta: CircuitValue = await storage.slot(227);
+    const askPrice: CircuitValue = await storage.slot(228);
+    const bidPrice: CircuitValue = await storage.slot(229);
+    const lastAction1: number = await storage.slot(230);
+    const lastAction2: number = await storage.slot(231);
 
     // Perform the Q-learning algorithm, 
     // pay attention to the scaling factor
@@ -135,6 +134,8 @@ export const circuit = async (inputs: CircuitInputs) => {
         action1 = div(maxIndex, 3);
         action2 = mod(maxIndex, 3);
     }
+    addToCallback(action1);
+    addToCallback(action2);
     if (isEqual(action1, zero)) {
         action1 = constant(-1);
     } else if (isEqual(action1, one)) {

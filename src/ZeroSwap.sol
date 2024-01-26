@@ -18,7 +18,7 @@ contract ZeroSwap is AxiomV2Client, Ownable {
     uint64 public SOURCE_CHAIN_ID;
 
     // Hyper Parameters for Q Learning
-    int256 public scalingFactor = 1000000; // 1x scaling factor
+    uint256 public scalingFactor = 1000000; // 1x scaling factor
     uint256 public windowSize = 10;
     int256 public alpha = 600000; // Learning rate 1x scaling factor
     int256 public gamma = 990000; // discount rate of future rewards 1x scaling factor
@@ -35,9 +35,9 @@ contract ZeroSwap is AxiomV2Client, Ownable {
     int256 public midPrice; // 1x scaling factor
     int256 public priceDelta; // 1x scaling factor
     // when buying 1 token1, how many token2 should we pay
-    int256 public askPrice; // 1x scaling factor
+    uint256 public askPrice; // 1x scaling factor
     // when selling 1 token1, how many token2 should we receive
-    int256 public bidPrice; // 1x scaling factor
+    uint256 public bidPrice; // 1x scaling factor
     int256 public lastAction1; // 0, 1, 2
     int256 public lastAction2; // 0, 1, 2
 
@@ -46,8 +46,8 @@ contract ZeroSwap is AxiomV2Client, Ownable {
     IERC20 token2;
     
     // Events
-    event Token1AddressUpdated(_token);
-    event Token2AddressUpdated(_token);
+    event Token1AddressUpdated(address indexed token1);
+    event Token2AddressUpdated(address indexed token2);
     event AxiomCallbackQuerySchemaUpdated(bytes32 axiomCallbackQuerySchema);
     event Token1Purchase(address indexed buyer, uint256 indexed token2Sold, uint256 indexed token1Bought);
     event Token2Purchase(address indexed buyer, uint256 indexed token1Sold, uint256 indexed token2Bought);
@@ -61,36 +61,28 @@ contract ZeroSwap is AxiomV2Client, Ownable {
     ) AxiomV2Client(_axiomV2QueryAddress) {
         QUERY_SCHEMA = _axiomCallbackQuerySchema;
         SOURCE_CHAIN_ID = _callbackSourceChainId;
-
-        // QTable = new int256[][](2*windowSize+1);
         for (uint256 i = 0; i < 21; i++) {
-            // QTable[i] = new int256[](9);
             for (uint256 j = 0; j < 9; j++) {
                 QTable[i][j] = 0;
             }
         }
-
-        // action1 = new int256[](3);
-        // action2 = new int256[](3);
         action1[0] = -1;
         action1[1] = 0;
         action1[2] = 1;
         action2[0] = -1;
         action2[1] = 0;
         action2[2] = 1;
-
-        // stateHistory = new int256[](2*windowSize);
         for (uint256 i = 0; i < 2*windowSize; i++) {
             stateHistory[i] = 0;
         }
         pointer = 0;
         imbalance = 0;
-        midPrice = 100;
+        midPrice = 1500000;
         priceDelta = 0;
         lastAction1 = 0;
         lastAction2 = 0;
-        askPrice = 0;
-        bidPrice = 0;
+        askPrice = 1100000;
+        bidPrice = 900000;
     }
 
     function _axiomV2Callback(
@@ -103,49 +95,39 @@ contract ZeroSwap is AxiomV2Client, Ownable {
     ) internal virtual override {
 
         // Parse results
-        uint32 _indexN = uint32(uint256(axiomResults[0]));
-        uint32 _indexA = uint32(uint256(axiomResults[1]));
-        
-        int256 _updatedQValue = int256(uint256(axiomResults[2]));
-        int256 _swapValue = int256(uint256(axiomResults[3]));
-        int256 _midPrice = int256(uint256(axiomResults[4]));
-        int256 _priceDelta = int256(uint256(axiomResults[5]));
-        int256 _askPrice = int256(uint256(axiomResults[6]));
-        int256 _bidPrice = int256(uint256(axiomResults[7]));
-        int256 _imbalance = int256(uint256(axiomResults[8]));
+        lastAction1 = int256(uint256(axiomResults[0]));
+        lastAction2 = int256(uint256(axiomResults[1]));
+        uint32 _indexN = uint32(uint256(axiomResults[2]));
+        uint32 _indexA = uint32(uint256(axiomResults[3]));
+        int256 _updatedQValue = int256(uint256(axiomResults[4]));
+        int256 _swapValue = int256(uint256(axiomResults[5]));
+        int256 _midPrice = int256(uint256(axiomResults[6]));
+        int256 _priceDelta = int256(uint256(axiomResults[7]));
+        uint256 _askPrice = uint256(axiomResults[8]);
+        uint256 _bidPrice = uint256(axiomResults[9]);
+        int256 _imbalance = int256(uint256(axiomResults[10]));
+
+        address _userAddr = address(uint160(uint256(axiomResults[11])));
+        uint256 _direction = uint256(axiomResults[12]);
+
+        int256 txValue = 0;
+
+        // Swap logic
+        if (_direction == 0) {
+            txValue = swapToken1ForToken2(_userAddr, uint256(_swapValue));
+        } else if (_direction == 1) {
+            txValue = swapToken2ForToken1(_userAddr, uint256(_swapValue));
+        }
 
         QTable[_indexN][_indexA] = _updatedQValue;
-        stateHistory[pointer] = _swapValue;
+        stateHistory[pointer] = txValue;
         pointer = (pointer + 1) % (2*windowSize);
         midPrice = _midPrice;
         priceDelta = _priceDelta;
         askPrice = _askPrice;
         bidPrice = _bidPrice;
         imbalance = _imbalance;
-
-        // Swap logic below
-
-        // address userEventAddress = address(uint160(uint256(axiomResults[0])));
-        // uint32 blockNumber = uint32(uint256(axiomResults[1]));
-        // address uniV3PoolUniWethAddr = address(uint160(uint256(axiomResults[2])));
-
-        // // Validate the results
-        // require(userEventAddress == callerAddr, "Autonomous Airdrop: Invalid user address for event");
-        // require(
-        //     blockNumber >= MIN_BLOCK_NUMBER,
-        //     "Autonomous Airdrop: Block number for transaction receipt must be 4000000 or greater"
-        // );
-        // require(
-        //     uniV3PoolUniWethAddr == UNIV3_POOL_UNI_WETH,
-        //     "Autonomous Airdrop: Address that emitted `Swap` event is not the UniV3 UNI-WETH pool address"
-        // );
-
-        // // Transfer tokens to user
-        // hasClaimed[callerAddr] = true;
-        // uint256 numTokens = 100 * 10 ** 18;
-        // token.transfer(callerAddr, numTokens);
-
-        // emit ClaimAirdrop(callerAddr, queryId, numTokens, axiomResults);
+        epsilon = epsilon - 1000;
     }
 
     function _validateAxiomV2Call(
@@ -206,11 +188,35 @@ contract ZeroSwap is AxiomV2Client, Ownable {
         priceDelta = _priceDelta;
     }
 
-    function getAskPrice() public view returns (int256) {
+    function setAskPrice(uint256 _askPrice) public onlyOwner {
+        askPrice = _askPrice;
+    }
+
+    function setBidPrice(uint256 _bidPrice) public onlyOwner {
+        bidPrice = _bidPrice;
+    }
+
+    function setAlpha(int256 _alpha) public onlyOwner {
+        alpha = _alpha;
+    }
+
+    function setGamma(int256 _gamma) public onlyOwner {
+        gamma = _gamma;
+    }
+
+    function setEpsilon(int256 _epsilon) public onlyOwner {
+        epsilon = _epsilon;
+    }
+
+    function setMu(int256 _mu) public onlyOwner {
+        mu = _mu;
+    }
+
+    function getAskPrice() public view returns (uint256) {
         return askPrice;
     }
 
-    function getBidPrice() public view returns (int256) {
+    function getBidPrice() public view returns (uint256) {
         return bidPrice;
     }
 
@@ -254,20 +260,22 @@ contract ZeroSwap is AxiomV2Client, Ownable {
         emit RemoveLiquidity(msg.sender, _token1Amount, _token2Amount);
     }
 
-    function swapToken1ForToken2(uint256 _token1Amount) public {
+    //  buy (𝑑𝑡 = +1), sell (𝑑𝑡 = −1) 
+    function swapToken1ForToken2(address user, uint256 _token1Amount) public returns (int256){
         require(_token1Amount > 0, "Token1 amount must be greater than 0");
-        token1.transferFrom(msg.sender, address(this), _token1Amount);
+        token1.transferFrom(user, address(this), _token1Amount);
         uint256 _token2Amount = uint256(_token1Amount * bidPrice / scalingFactor);
-        token2.transfer(msg.sender, uint256(_token2Amount));
-        emit Token2Purchase(msg.sender, _token1Amount, _token2Amount);
+        token2.transfer(user, uint256(_token2Amount));
+        emit Token2Purchase(user, _token1Amount, _token2Amount);
+        return -1 * int256(_token1Amount);
     }
 
-    function swapToken2ForToken1(uint256 _token2Amount) public {
+    function swapToken2ForToken1(address user, uint256 _token2Amount) public returns (int256){
         require(_token2Amount > 0, "Token2 amount must be greater than 0");
-        token2.transferFrom(msg.sender, address(this), _token2Amount);
+        token2.transferFrom(user, address(this), _token2Amount);
         uint256 _token1Amount = uint256(_token2Amount * scalingFactor / askPrice);
-        token1.transfer(msg.sender, uint256(_token1Amount));
-        emit Token1Purchase(msg.sender, _token2Amount, _token1Amount);
+        token1.transfer(user, uint256(_token1Amount));
+        emit Token1Purchase(user, _token2Amount, _token1Amount);
+        return int256(_token1Amount);
     }
-
 }
