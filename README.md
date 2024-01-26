@@ -4,9 +4,17 @@ In this repository, we implement the Q-learning algorithm in the ZeroSwap using 
 
 This is built based on the repository https://github.com/axiom-crypto/autonomous-airdrop-example, and the paper https://arxiv.org/pdf/2310.09413.pdf
 
-There are three components: frontend, zk circuit, and the contract
+## Contracts on Sepolia
 
-Consider the simple implementation first, the swapping logic should refer to the Uniswap.
+The two tokens are deployed to:
+
+ZeroSwapToken1(ZST1): 0x6bEb2A6ee911C3Bb9F8295826565D9fa62edd2B2
+
+ZeroSwapToken2(ZST2): 0x27886F651AC1c2745e1116bf350E48eB5e70FCCe
+
+The ZeroSwap contract is deployed to 0xDEBF7e4F81A8eE82Dd86a2B5554fa922935830A1
+
+NOTICE: use the [unit converter](https://sepolia.etherscan.io/unitconverter) to swap.
 
 ## Algorithm Hyper Parameter Setting
 
@@ -24,7 +32,7 @@ gamma = 0.99 discount rate of future rewards
 
 ## Frontend
 
-Users make requests to swap some tokens. The input from the frontend is the same as the uniswap. And there is also a random number, and two random actions. (NOTICE: the random number should be generated with proof, but till now we don't know how to do this.)
+Users make requests to swap some tokens. The input from the frontend is the same as the uniswap. And there is also a random number, and two random actions. We use the hash of the latest block to generate the random numbers. 
 
 ## ZK Circuit
 
@@ -58,7 +66,6 @@ It should get all the data maintained by the smart contract.
 9. Bid Price
 10. Hyper Parameters
 
-### Contract slot
 
 | Name            | Type            | Slot | Offset | Bytes | Contract                  |
 |-----------------|-----------------|------|--------|-------|---------------------------|
@@ -95,9 +102,12 @@ It should get all the data maintained by the smart contract.
 2. new swap value (int256)
 3. updated mid price (int256)
 4. updated price delta (int256)
-5. updated ask price (int256)
-6. updated bid price (int256)
+5. updated ask price (uint256)
+6. updated bid price (uint256)
 7. updated imbalance (int256)
+8. user address (address)
+9. swap direction (uint256)
+10. last action (int256)
 
 ### Computation inside the Swap Function
 
@@ -118,13 +128,14 @@ It should get all the data maintained by the smart contract.
 ## Existing Problems
 
 1. How to index multi-dimensional arrays in the client circuit? (solved)
-2. Can we get the reference of elements in the array and change them?
-3. By now, some array operations in the client circuit are not using the Axiom datatype/primitives. (use the .number() to index and use it as the boolean value)
+2. Can we get the reference of elements in the array and change them? (solved, just copy)
+3. By now, some array operations in the client circuit are not using the Axiom datatype/primitives. (use the .number() to index and use it as the boolean value) (solved)
 4. How to test the convergence without spending lots of testETH? How to skip the Axiom verifier and prover and just to verify my codes?
 
 ## Error Message
 
 1. The client circuit must have a addToCallback function, otherwise it will have an error message throw new Error("Could not find import name");
+2. The output of the storage.slot is CircuitValue256, we should convert it if we want to use CircuitValue.
 
 ## Circuit
 
