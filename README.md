@@ -117,9 +117,9 @@ It should get all the data maintained by the smart contract.
 
 ## Existing Problems
 
-1. How to index multi-dimensional arrays in the client circuit?
+1. How to index multi-dimensional arrays in the client circuit? (solved)
 2. Can we get the reference of elements in the array and change them?
-3. By now, some array operations in the client circuit are not using the Axiom datatype/primitives.  
+3. By now, some array operations in the client circuit are not using the Axiom datatype/primitives. (use the .number() to index and use it as the boolean value)
 4. How to test the convergence without spending lots of testETH? How to skip the Axiom verifier and prover and just to verify my codes?
 
 ## Error Message

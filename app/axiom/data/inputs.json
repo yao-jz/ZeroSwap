@@ -2,7 +2,6 @@
     "value": 1,
     "address": "0x3DAD7c5704A6eA567A0549ee711768C0A405D06C",
     "direction": 0,
-    "blockNumber": 0,
-    "contractAddress": "0x3DAD7c5704A6eA567A0549ee711768C0A405D06C",
-    "latestBlockNumber": 0
+    "contractAddress": "0xDEBF7e4F81A8eE82Dd86a2B5554fa922935830A1",
+    "latestBlockNumber": 5155233
 }
