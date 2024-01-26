@@ -14,6 +14,9 @@ import {
     getHeader,
     isEqual,
     isLessThan,
+    select,
+    CircuitValue256,
+    neg,
 } from "@axiom-crypto/client";
 
 /// For type safety, define the input types to your circuit here.
@@ -32,53 +35,34 @@ export interface CircuitInputs {
 export const circuit = async (inputs: CircuitInputs) => {
     // Read data from the contract's slot
     const storage: Storage = getStorage(inputs.latestBlockNumber, inputs.contractAddress);
-    const scalingFactor: CircuitValue = (await storage.slot(3)).toCircuitValue();
-    const windowSize: CircuitValue = (await storage.slot(4)).toCircuitValue();
-    const alpha: CircuitValue = (await storage.slot(5)).toCircuitValue();
-    const gamma: CircuitValue = (await storage.slot(6)).toCircuitValue();
-    const epsilon: CircuitValue = (await storage.slot(7)).toCircuitValue();
-    const mu: CircuitValue = (await storage.slot(8)).toCircuitValue();
-    // console.log(mu);
-    // let QTable: Array<Array<CircuitValue>> = [];
-    // for (let i = 0; i < 21; i++) {
-    //     QTable.push([]);
-    // }
-    // for (let i = 0; i < 21; i++) {
-    //     for (let j = 0; j < 9; j++) {
-    //         QTable[i].push((await storage.slot(9 + i * 9 + j)).toCircuitValue());
-    //     }
-    // }
-    const pointer: number = (await storage.slot(224)).toCircuitValue().number();
+    const scalingFactor: CircuitValue = (await storage.slot(constant(3))).toCircuitValue();
+    const windowSize: CircuitValue = (await storage.slot(constant(4))).toCircuitValue();
+    const alpha: CircuitValue = (await storage.slot(constant(5))).toCircuitValue();
+    const gamma: CircuitValue = (await storage.slot(constant(6))).toCircuitValue();
+    const epsilon: CircuitValue = (await storage.slot(constant(7))).toCircuitValue();
+    const mu: CircuitValue = (await storage.slot(constant(8))).toCircuitValue();
+    const pointer: CircuitValue = (await storage.slot(constant(224))).toCircuitValue();
     let newImbalance = inputs.value;
     for (let i = 0; i < 20; i++) {
-        if (i == pointer) continue;
         newImbalance = add(
             newImbalance,
-            (await storage.slot(204 + i)).toCircuitValue()
+            select(constant(0), (await storage.slot(constant(204 + i))).toCircuitValue(), isEqual(pointer, constant(i)))
         );
     }
-    // let stateHistory: Array<CircuitValue> = [];
-    // for (let i = 0; i < 20; i++) {
-    //     stateHistory.push((await storage.slot(204 + i)).toCircuitValue());
-    // }
-    // const pointer: number = (await storage.slot(224)).toCircuitValue().number();
-    const imbalance: number = (await storage.slot(225)).toCircuitValue().number();
-    const midPrice: CircuitValue = (await storage.slot(226)).toCircuitValue();
-    const priceDelta: CircuitValue = (await storage.slot(227)).toCircuitValue();
-    const askPrice: CircuitValue = (await storage.slot(228)).toCircuitValue();
-    const bidPrice: CircuitValue = (await storage.slot(229)).toCircuitValue();
-    const lastAction1: number = (await storage.slot(230)).toCircuitValue().number();
-    const lastAction2: number = (await storage.slot(231)).toCircuitValue().number();
-
-    // Perform the Q-learning algorithm, 
-    // pay attention to the scaling factor
-    // stateHistory[pointer] = inputs.value;
-    // const newImbalance: CircuitValue = sum(stateHistory);
+    const imbalance: CircuitValue = (await storage.slot(constant(225))).toCircuitValue();
+    const midPrice: CircuitValue = (await storage.slot(constant(226))).toCircuitValue();
+    const priceDelta: CircuitValue = (await storage.slot(constant(227))).toCircuitValue();
+    const askPrice: CircuitValue = (await storage.slot(constant(228))).toCircuitValue();
+    const bidPrice: CircuitValue = (await storage.slot(constant(229))).toCircuitValue();
+    const lastAction1: CircuitValue = (await storage.slot(constant(230))).toCircuitValue();
+    const lastAction2: CircuitValue = (await storage.slot(constant(231))).toCircuitValue();
+    // // Perform the Q-learning algorithm, 
+    // // pay attention to the scaling factor
     const reward = sub( // 1x scaling factor
         sub(
-            0,
+            constant(0),
             mul(
-                pow(newImbalance, 2),
+                pow(newImbalance, constant(2)),
                 scalingFactor
             )
         ),
@@ -87,27 +71,82 @@ export const circuit = async (inputs: CircuitInputs) => {
             div(
                 pow(
                     sub(askPrice, bidPrice),
-                    2
+                    constant(2)
                 ),
                 scalingFactor
             )
         )
     );
-    let maxIndex = 0;
-    let maxQTableValue: CircuitValue = (await storage.slot(9 + newImbalance.number() * 9 + maxIndex)).toCircuitValue();
+    console.log("reward", reward);
+    console.log("scalingFactor", scalingFactor);
+    console.log("div(reward,scalingFactor)", div(reward,scalingFactor));
+    // OUTPUT
+    // reward CircuitValue {
+    //     _circuit: Halo2LibWasm { __wbg_ptr: 6556120 },
+    //     _cell: 20508,
+    //     _value: 21888242871839275222246405745257275088548364400416034343698204186575806775617n
+    //   }
+    //   reward.number() 2.1888242871839275e+76
+    //   scalingFactor CircuitValue {
+    //     _circuit: Halo2LibWasm { __wbg_ptr: 6556120 },
+    //     _cell: 200,
+    //     _value: 1000000n
+    //   }
+    //   scalingFactor.number() 1000000
+    //   div(reward,scalingFactor) CircuitValue {
+    //     _circuit: Halo2LibWasm { __wbg_ptr: 6556120 },
+    //     _cell: 20515,
+    //     _value: 21888242871839275222246405745257275088548364400416034343698204186575806n
+    //   }
+    let maxIndex: CircuitValue = constant(0);
+    let maxQTableValue: CircuitValue = (await storage.slot(
+        add(
+            add(
+                constant(9),
+                mul(
+                    newImbalance,
+                    constant(9)
+                )
+            ),
+            maxIndex
+        )
+    )).toCircuitValue();
     for (let i = 0; i < 9; i++) {
-        let thisQTableValue: CircuitValue = (await storage.slot(9 + newImbalance.number() * 9 + i)).toCircuitValue();
-        if (isLessThan(maxQTableValue, thisQTableValue).number()) {
-            maxIndex = i;
-            maxQTableValue = thisQTableValue;
-        }
-        // if (QTable[newImbalance.number()][i] > QTable[newImbalance.number()][maxIndex]) {
-        //     maxIndex = i;
-        // }
+        let thisQTableValue: CircuitValue = (await storage.slot(
+            add(
+                add(
+                    constant(9),
+                    mul(
+                        newImbalance,
+                        constant(9)
+                    )
+                ),
+                constant(i)
+            )
+        )).toCircuitValue();
+        maxIndex = select(constant(i), maxIndex, isLessThan(maxQTableValue, thisQTableValue));
+        maxQTableValue = select(thisQTableValue, maxQTableValue, isLessThan(maxQTableValue, thisQTableValue));
     }
     const newQValue = add( // 1x scaling factor
         // QTable[imbalance][lastAction1*3+lastAction2],
-        (await storage.slot(9 + imbalance * 9 + lastAction1 * 3 + lastAction2)).toCircuitValue(),
+        (await storage.slot(
+            add(
+                add(
+                    constant(9),
+                    mul(
+                        imbalance,
+                        constant(9)
+                    )
+                ),
+                add(
+                    mul(
+                        lastAction1,
+                        constant(3)
+                    ),
+                    lastAction2
+                )
+            )
+        )).toCircuitValue(),
         div(
             mul(
                 alpha,
@@ -122,7 +161,24 @@ export const circuit = async (inputs: CircuitInputs) => {
                             ),
                             scalingFactor
                         ),
-                        (await storage.slot(9 + imbalance * 9 + lastAction1 * 3 + lastAction2)).toCircuitValue()
+                        (await storage.slot(
+                            add(
+                                add(
+                                    constant(9),
+                                    mul(
+                                        imbalance,
+                                        constant(9)
+                                    )
+                                ),
+                                add(
+                                    mul(
+                                        lastAction1,
+                                        constant(3)
+                                    ),
+                                    lastAction2
+                                )
+                            )
+                        )).toCircuitValue()
                         // QTable[imbalance][lastAction1*3+lastAction2]
                     )
                 )
@@ -133,21 +189,17 @@ export const circuit = async (inputs: CircuitInputs) => {
 
     // Get a random number
     const header = getHeader(inputs.latestBlockNumber);
-    const stateRoot = await header.stateRoot();
-    const randomNumber = mod(poseidon(stateRoot.lo()), scalingFactor)
-    let action1: CircuitValue = constant(0);
-    let action2: CircuitValue = constant(0);
-    if (randomNumber < epsilon) { // random action
-        const transactionsRoot = await header.transactionsRoot();
-        const receiptsRoot = await header.receiptsRoot();
-        // get map value
-        action1 = mod(poseidon(transactionsRoot.lo()), 3)
-        action2 = mod(poseidon(receiptsRoot.lo()), 3)
-    } else { // greedy action
-        // maxIndex
-        action1 = div(maxIndex, 3);
-        action2 = mod(maxIndex, 3);
-    }
+    const stateRoot: CircuitValue256 = await header.stateRoot();
+    // const randomNumber: CircuitValue = mod(poseidon(stateRoot.lo()), scalingFactor);
+    const randomNumber: CircuitValue = constant(0);
+    const transactionsRoot: CircuitValue256 = await header.transactionsRoot();
+    const receiptsRoot: CircuitValue256 = await header.receiptsRoot();
+    // const action1 = select(mod(poseidon(transactionsRoot.lo()), constant(3)), div(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
+    // const action2 = select(mod(poseidon(receiptsRoot.lo()), constant(3)), mod(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
+    // const temp1: CircuitValue = poseidon(receiptsRoot.lo());
+    // const temp = mod(temp1, constant(3));
+    const action1 = select(constant(1), div(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
+    const action2 = select(constant(1), mod(maxIndex, constant(3)), isLessThan(randomNumber, epsilon));
     addToCallback(action1);
     addToCallback(action2);
     const newMidPrice = add( // 1x scaling factor
@@ -155,7 +207,7 @@ export const circuit = async (inputs: CircuitInputs) => {
         mul(
             sub(
                 action1,
-                1
+                constant(1)
             ),
             scalingFactor
         )
@@ -165,7 +217,7 @@ export const circuit = async (inputs: CircuitInputs) => {
         mul(
             sub(
                 action2,
-                1
+                constant(1)
             ),
             scalingFactor
         )
@@ -178,8 +230,8 @@ export const circuit = async (inputs: CircuitInputs) => {
         newMidPrice,
         newPriceDelta
     );
-    addToCallback(constant(imbalance));
-    addToCallback(constant(maxIndex));
+    addToCallback(imbalance);
+    addToCallback(maxIndex);
     addToCallback(newQValue);
     addToCallback(inputs.value);
     addToCallback(newMidPrice);

@@ -125,3 +125,8 @@ It should get all the data maintained by the smart contract.
 ## Error Message
 
 1. The client circuit must have a addToCallback function, otherwise it will have an error message throw new Error("Could not find import name");
+
+## Circuit
+
+npx axiom circuit compile app/axiom/zeroswap.circuit.ts --inputs app/axiom/data/inputs.json --provider $PROVIDER_URI_SEPOLIA
+npx axiom circuit prove app/axiom/zeroswap.circuit.ts --inputs app/axiom/data/inputs.json --provider $PROVIDER_URI_SEPOLIA
